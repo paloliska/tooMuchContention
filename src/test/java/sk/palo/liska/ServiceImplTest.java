@@ -8,10 +8,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import org.awaitility.Awaitility;
 import org.hibernate.exception.LockAcquisitionException;
 import org.slf4j.Logger;
@@ -23,9 +20,7 @@ import org.springframework.transaction.support.TransactionCallbackWithoutResult;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.FileSystemUtils;
 import org.testng.Assert;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
+import org.testng.annotations.*;
 
 /**
  * @author pavol.liska
@@ -37,14 +32,15 @@ public class ServiceImplTest {
 
     private static final String DERBY_CONNECTION_URL = "jdbc:derby:derbyDB";
     private static Connection connection;
-    private final int nThreads = 30;
+    public static final int TEST_TIMEOUT = 60;
+    private final int nThreads = 16;
 
     private ApplicationContext context;
     private TransactionTemplate txTemplate;
     private HibernateSessionProvider sessionProvider;
     boolean isInterrupted = false;
 
-    private ServiceImpl testable;
+    private IService testable;
     private boolean failed;
 
     /**
@@ -53,9 +49,9 @@ public class ServiceImplTest {
      * PASS
      */
     @Test
-    public void testSaveTableByTimePassing() throws Exception {
+    public void testSaveTableByTimeAllTransactional() throws Exception {
         failed = false;
-        logger.info("loop test");
+        logger.info("loop test 1");
 
         ExecutorService executor = Executors.newFixedThreadPool(nThreads * 2);
         List<Callable<Object>> tasks1 = insertTasks();
@@ -66,7 +62,6 @@ public class ServiceImplTest {
         tasks.addAll(tasks1);
         tasks.addAll(tasks2);
 
-        logger.info("go");
         runTasks(executor, tasks);
 
         shutdownExecutor(executor);
@@ -79,13 +74,13 @@ public class ServiceImplTest {
     /**
      * test concurrent inserts, updates, select count
      * insert, update inside @Transactional
-     * select count in TransactionTempalate
+     * select count in TransactionTempalate in test class method
      * FAILING derby with tooMuchContentionException
      */
     @Test
-    public void testSaveTableByTimeFailing() throws Exception {
+    public void testSaveTableByTimeWithTxTemplateInTest() throws Exception {
         failed = false;
-        logger.info("loop test");
+        logger.info("loop test 2");
 
         ExecutorService executor = Executors.newFixedThreadPool(nThreads * 2);
         List<Callable<Object>> tasks1 = insertTasks();
@@ -96,11 +91,37 @@ public class ServiceImplTest {
         tasks.addAll(tasks1);
         tasks.addAll(tasks2);
 
-        logger.info("go");
         runTasks(executor, tasks);
 
         shutdownExecutor(executor);
         logger.info("I have {} Tables saved", getCountTableFailing());
+
+        Assert.assertFalse(isFailed());
+    }
+
+    /**
+     * test concurrent inserts, updates, select count
+     * insert, update inside @Transactional
+     * select count in TransactionTempalate in Service method
+     */
+    @Test
+    public void testSaveTableByTimeWithTxTemplateInService() throws Exception {
+        failed = false;
+        logger.info("loop test 3");
+
+        ExecutorService executor = Executors.newFixedThreadPool(nThreads * 2);
+        List<Callable<Object>> tasks1 = insertTasks();
+
+        List<Callable<Object>> tasks2 = updateTasksFailing2();
+
+        Collection<Callable<Object>> tasks = new ArrayList<>();
+        tasks.addAll(tasks1);
+        tasks.addAll(tasks2);
+
+        runTasks(executor, tasks);
+
+        shutdownExecutor(executor);
+        logger.info("I have {} Tables saved", getCountTableServiceFailing());
 
         Assert.assertFalse(isFailed());
     }
@@ -113,12 +134,13 @@ public class ServiceImplTest {
 
     private void runTasks(ExecutorService executor, Collection<Callable<Object>> tasks) throws InterruptedException {
         try {
-            Awaitility.await().atMost(60, TimeUnit.SECONDS).until(() -> {
+            Awaitility.await().atMost(TEST_TIMEOUT, TimeUnit.SECONDS).until(() -> {
                 executor.invokeAll(tasks);
                 return null;
             });
         } catch (Exception e) {
-            logger.warn("{}", e.getClass().getSimpleName());
+            if (e instanceof TimeoutException) return;
+            logger.warn("{}", e);
         }
 
         isInterrupted = true;
@@ -131,18 +153,42 @@ public class ServiceImplTest {
                 while (true) {
                     MyTable request = testable.getTable(getCountTableFailing() - 1);
                     if (request == null) continue;
-                    request.setRequestID("teda som");
+                    request.setRequestID("som pipiq");
                     testable.updateTable(request);
                     if (isInterrupted()) throw new InterruptedException();
                 }
             } catch (InterruptedException e) {
-                logger.info("interrupt");
+                //logger.info("interrupt");
             } catch (Exception e) {
                 if (e instanceof LockAcquisitionException) {
                     logger.error("{}", e);
                     setFailed();
                 } else {
-                    logger.warn("{}", e);
+                    //logger.warn("{}", e);
+                }
+            }
+            return null;
+        });
+    }
+
+    private List<Callable<Object>> updateTasksFailing2() {
+        return Collections.nCopies(nThreads, () -> {
+            try {
+                while (true) {
+                    MyTable request = testable.getTable(getCountTableServiceFailing() - 1);
+                    if (request == null) continue;
+                    request.setRequestID("som pipiq");
+                    testable.updateTable(request);
+                    if (isInterrupted()) throw new InterruptedException();
+                }
+            } catch (InterruptedException e) {
+                //logger.info("interrupt");
+            } catch (Exception e) {
+                if (e instanceof LockAcquisitionException) {
+                    logger.error("{}", e);
+                    setFailed();
+                } else {
+                    //logger.warn("{}", e);
                 }
             }
             return null;
@@ -160,13 +206,13 @@ public class ServiceImplTest {
                     if (isInterrupted()) throw new InterruptedException();
                 }
             } catch (InterruptedException e) {
-                logger.info("interrupt");
+                //logger.info("interrupt");
             } catch (Exception e) {
                 if (e instanceof LockAcquisitionException) {
                     logger.error("{}", e);
                     setFailed();
                 } else {
-                    logger.warn("{}", e);
+                    //logger.warn("{}", e);
                 }
             }
             return null;
@@ -186,13 +232,13 @@ public class ServiceImplTest {
                     if (isInterrupted()) throw new InterruptedException();
                 }
             } catch (InterruptedException e) {
-                logger.info("interrupt");
+                //logger.info("interrupt");
             } catch (Exception e) {
                 if (e instanceof LockAcquisitionException) {
                     logger.error("{}", e);
                     setFailed();
                 } else {
-                    logger.warn("{}", e);
+                    //logger.warn("{}", e);
                 }
             }
             return null;
@@ -211,7 +257,7 @@ public class ServiceImplTest {
         return isInterrupted;
     }
 
-    @BeforeClass
+    @BeforeMethod
     public void beforeMethod() {
         FileSystemUtils.deleteRecursively(new File("derbyDB"));
         try {
@@ -223,7 +269,7 @@ public class ServiceImplTest {
         fillDB();
     }
 
-    @AfterClass(alwaysRun = true)
+    @AfterMethod(alwaysRun = true)
     public void afterMethod() {
         dropTable();
         try {
@@ -231,6 +277,7 @@ public class ServiceImplTest {
         } catch (SQLException e) {
             logger.error("{}", e);
         }
+        FileSystemUtils.deleteRecursively(new File("derbyDB"));
     }
 
     private Long getCountTablePassing() {
@@ -241,6 +288,10 @@ public class ServiceImplTest {
         return txTemplate.execute(status -> (Long) sessionProvider.getCurrentSession()
                 .createQuery("select count(*) from MYTABLE")
                 .uniqueResult());
+    }
+
+    private Long getCountTableServiceFailing() {
+        return testable.getCountWithTxTemplate();
     }
 
     private void dropTable() {
@@ -292,7 +343,7 @@ public class ServiceImplTest {
         context = new AnnotationConfigApplicationContext(SpringConf.class, ServiceImpl.class);
         txTemplate = (TransactionTemplate) context.getBean("txTemplate");
         sessionProvider = (HibernateSessionProvider) context.getBean("sessionProvider");
-        testable = context.getBean(ServiceImpl.class);
+        testable = context.getBean(IService.class);
     }
 
     private static void startEpsDB() throws Exception {
