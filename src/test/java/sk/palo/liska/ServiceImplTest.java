@@ -11,6 +11,11 @@ import java.util.List;
 import java.util.concurrent.*;
 import org.awaitility.Awaitility;
 import org.hibernate.exception.LockAcquisitionException;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
@@ -19,20 +24,21 @@ import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallbackWithoutResult;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.FileSystemUtils;
-import org.testng.Assert;
-import org.testng.annotations.*;
+
+import static org.junit.Assert.assertFalse;
 
 /**
  * @author pavol.liska
  * @date 6/8/2018
  */
+@RunWith(JUnit4.class)
 public class ServiceImplTest {
 
     private static final Logger logger = LoggerFactory.getLogger(ServiceImplTest.class);
 
     private static final String DERBY_CONNECTION_URL = "jdbc:derby:derbyDB";
     private static Connection connection;
-    public static final int TEST_TIMEOUT = 60;
+    public static final int TEST_TIMEOUT = 10;
     private final int nThreads = 16;
 
     private ApplicationContext context;
@@ -68,7 +74,7 @@ public class ServiceImplTest {
 
         logger.info("I have {} Tables saved", getCountTablePassing());
 
-        Assert.assertFalse(isFailed());
+        assertFalse(isFailed());
     }
 
     /**
@@ -96,7 +102,7 @@ public class ServiceImplTest {
         shutdownExecutor(executor);
         logger.info("I have {} Tables saved", getCountTableFailing());
 
-        Assert.assertFalse(isFailed());
+        assertFalse(isFailed());
     }
 
     /**
@@ -123,7 +129,7 @@ public class ServiceImplTest {
         shutdownExecutor(executor);
         logger.info("I have {} Tables saved", getCountTableServiceFailing());
 
-        Assert.assertFalse(isFailed());
+        assertFalse(isFailed());
     }
 
     private void shutdownExecutor(ExecutorService executor) throws InterruptedException {
@@ -257,7 +263,7 @@ public class ServiceImplTest {
         return isInterrupted;
     }
 
-    @BeforeMethod
+    @Before
     public void beforeMethod() {
         FileSystemUtils.deleteRecursively(new File("derbyDB"));
         try {
@@ -269,7 +275,7 @@ public class ServiceImplTest {
         fillDB();
     }
 
-    @AfterMethod(alwaysRun = true)
+    @After
     public void afterMethod() {
         dropTable();
         try {
@@ -321,18 +327,7 @@ public class ServiceImplTest {
                         "  REQUESTID             VARCHAR(40)  not null,\n" +
                         "  SHIFTNUMBER           VARCHAR(20),\n" +
                         "  TERMINALID            VARCHAR(255),\n" +
-                        "  WORKSTATIONID         VARCHAR(40)  not null,\n" +
-                        "  CASHBACKAMOUNT        NUMERIC(19, 3),\n" +
-                        "  REFERENCENUMBER       VARCHAR(40),\n" +
-                        "  PAYMENTMETHOD         VARCHAR(40),\n" +
-                        "  ORIGINALINVOICENUMBER VARCHAR(255),\n" +
-                        "  ORIGINALAMOUNT        NUMERIC(19, 3),\n" +
-                        "  RESENDFLAG            BOOLEAN,\n" +
-                        "  HOSTCONFIGID          BIGINT,\n" +
-                        "  TRANSACTIONNUMBER     VARCHAR(40),\n" +
-                        "  STAN                  INTEGER,\n" +
-                        "  TRNSECUREDATAID       BIGINT,\n" +
-                        "  WASPREPAYCARDINBASKET BOOLEAN\n" +
+                        "  WORKSTATIONID         VARCHAR(40)  not null\n" +
                         ")").executeUpdate();
             }
         });
