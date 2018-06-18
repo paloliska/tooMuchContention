@@ -13,7 +13,7 @@ public class MyTable {
     private static final long serialVersionUID = -5829007942440551969L;
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
     @Column

@@ -46,11 +46,11 @@ public class ServiceImpl implements IService {
     @Override
     @Transactional
     public Long getCount() {
-        return ((Integer) sessionProvider.getCurrentSession().createSQLQuery("select count(*) from MyTable").uniqueResult()).longValue();
+        return ((Integer) sessionProvider.getCurrentSession().createNativeQuery("select count(*) from MyTable").uniqueResult()).longValue();
     }
 
     @Override
     public Long getCountWithTxTemplate() {
-        return txTemplate.execute(status -> ((Integer) sessionProvider.getCurrentSession().createSQLQuery("select count(*) from MyTable").uniqueResult()).longValue());
+        return txTemplate.execute(status -> ((Integer) sessionProvider.getCurrentSession().createNativeQuery("select count(*) from MyTable").uniqueResult()).longValue());
     }
 }

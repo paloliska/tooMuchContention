@@ -8,6 +8,16 @@
     <artifactId>tooMuchContention</artifactId>
     <version>1.0-SNAPSHOT</version>
 
+    <properties>
+        <!--<derby.version>10.13.1.1</derby.version>-->
+        <!--<hibernate.version>4.3.11.Final</hibernate.version>-->
+        <!--<spring.vesion>4.3.7.RELEASE</spring.vesion>-->
+
+        <derby.version>10.14.2.0</derby.version>
+        <hibernate.version>5.3.1.Final</hibernate.version>
+        <spring.vesion>5.0.7.RELEASE</spring.vesion>
+    </properties>
+
     <build>
         <plugins>
             <plugin>
@@ -35,27 +45,27 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-context</artifactId>
-            <version>4.3.7.RELEASE</version>
+            <version>${spring.vesion}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-tx</artifactId>
-            <version>4.3.7.RELEASE</version>
+            <version>${spring.vesion}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-core</artifactId>
-            <version>4.3.7.RELEASE</version>
+            <version>${spring.vesion}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-orm</artifactId>
-            <version>4.3.7.RELEASE</version>
+            <version>${spring.vesion}</version>
         </dependency>
         <dependency>
             <groupId>org.hibernate</groupId>
             <artifactId>hibernate-core</artifactId>
-            <version>4.3.11.Final</version>
+            <version>${hibernate.version}</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -127,17 +137,17 @@
         <dependency>
             <groupId>org.apache.derby</groupId>
             <artifactId>derbyclient</artifactId>
-            <version>10.13.1.1</version>
+            <version>${derby.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.derby</groupId>
             <artifactId>derby</artifactId>
-            <version>10.13.1.1</version>
+            <version>${derby.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.derby</groupId>
             <artifactId>derbynet</artifactId>
-            <version>10.13.1.1</version>
+            <version>${derby.version}</version>
         </dependency>
     </dependencies>
 </project>

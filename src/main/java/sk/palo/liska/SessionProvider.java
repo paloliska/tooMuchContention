@@ -6,8 +6,8 @@ import org.slf4j.LoggerFactory;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.orm.hibernate4.SessionFactoryUtils;
-import org.springframework.orm.hibernate4.SessionHolder;
+import org.springframework.orm.hibernate5.SessionFactoryUtils;
+import org.springframework.orm.hibernate5.SessionHolder;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /**
@@ -36,7 +36,7 @@ public class SessionProvider implements HibernateSessionProvider {
     @Override
     public Session getCurrentSession() {
         Session session = sessionFactory.getCurrentSession();
-        session.setFlushMode(FlushMode.COMMIT);
+        session.setHibernateFlushMode(FlushMode.COMMIT);
         logger.trace("Current transaction: {}", session.getTransaction());
 
         return session;
