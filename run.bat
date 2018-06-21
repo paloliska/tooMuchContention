@@ -1,0 +1,1 @@
+java -cp target/lib/*;target/classes;target/test-classes org.junit.runner.JUnitCore sk.palo.liska.ServiceImplTest
